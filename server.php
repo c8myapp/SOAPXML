@@ -226,7 +226,7 @@ $server->wsdl->addComplexType(
 
 
 
-// Register the method to expose
+// Register the method to expose/
 $server->register('payment',                                    // method name
     array('PaymentRequest' => 'tns:PaymentRequest'),            // input parameters
     array('PaymentResponse' => 'tns:PaymentResponse'),          // output parameters
