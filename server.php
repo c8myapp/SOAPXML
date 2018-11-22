@@ -143,7 +143,10 @@ $server->register('inquiry',                    // method name
 );
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 $server->wsdl->addComplexType(
     'PaymentRequest',
     'complexType',
@@ -169,6 +172,20 @@ $server->wsdl->addComplexType(
         'reference3' => array('name'=>'reference3','type'=>'xsd:string')
     )
 );
+
+$server->wsdl->addComplexType(
+    'ArrayOfString',
+    'complexType',
+    'struct',
+    'sequence',
+    '',
+    array(
+        'string' => array('name'=>'string','type'=>'xsd:string')
+    )
+);
+
+
+
 
 
 
@@ -213,18 +230,6 @@ $server->wsdl->addComplexType(
 
 
 
-$server->wsdl->addComplexType(
-    'ArrayOfString',
-    'complexType',
-    'struct',
-    'sequence',
-    '',
-    array(
-        'BillDetail' => array('name'=>'BillDetail','type'=>'tns:BillDetail')
-    )
-);
-
-
 
 // Register the method to expose/
 $server->register('payment',                                    // method name
@@ -237,7 +242,71 @@ $server->register('payment',                                    // method name
     'Greet a person entering the sweepstakes'                   // documentation
 );
 
-//run the service
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+$server->wsdl->addComplexType(
+    'ReversalRequest',
+    'complexType',
+    'struct',
+    'sequence',
+    '',
+    array(
+        'language' => array('name'=>'language','type'=>'xsd:string'),
+        'trxDateTime' => array('name'=>'trxDateTime','type'=>'xsd:string'),
+        'origTrxDateTime' => array('name'=>'origTrxDateTime','type'=>'xsd:string'),
+        'transmissionDateTime' => array('name'=>'transmissionDateTime','type'=>'xsd:string'),
+        'origTransmissionDateTime' => array('name'=>'origTransmissionDateTime','type'=>'xsd:string'),
+        'companyCode' => array('name'=>'companyCode','type'=>'xsd:string'),
+        'channelID' => array('name'=>'channelID','type'=>'xsd:string'),
+        'terminalID' => array('name'=>'terminalID','type'=>'xsd:string'),
+        'billKey1' => array('name'=>'billKey1','type'=>'xsd:string'),
+        'billKey2' => array('name'=>'billKey2','type'=>'xsd:string'),
+        'billKey3' => array('name'=>'billKey3','type'=>'xsd:string'),
+        'paymentAmount' => array('name'=>'paymentAmount','type'=>'xsd:string'),
+        'currency' => array('name'=>'currency','type'=>'xsd:string'),
+        'transactionID' => array('name'=>'transactionID','type'=>'xsd:string'),
+        'reference1' => array('name'=>'reference1','type'=>'xsd:string'),
+        'reference2' => array('name'=>'reference2','type'=>'xsd:string'),
+        'reference3' => array('name'=>'reference3','type'=>'xsd:string')
+    )
+);
+
+
+
+
+$server->wsdl->addComplexType(
+    'ReversalResponse',
+    'complexType',
+    'struct',
+    'sequence',
+    '',
+
+    array(
+        'currency' => array('name' => 'currency', 'type' => 'tns:Status')
+    )
+);
+
+
+// Register the method to expose/
+$server->register('reverse',                                    // method name
+    array('ReversalRequest' => 'tns:ReversalRequest'),            // input parameters
+    array('ReversalResponse' => 'tns:ReversalResponse'),          // output parameters
+    'urn:hellowsdl2',                                           // namespace
+    'urn:hellowsdl2#hello',                                     // soapaction
+    'rpc',                                                      // style
+    'encoded',                                                  // use
+    'Greet a person entering the sweepstakes'                   // documentation
+);
+
+
+
 $post = file_get_contents('php://input');
 $server->service($post);
 

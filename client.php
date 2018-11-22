@@ -28,8 +28,8 @@ if($method=="inquiry")
             'trxDateTime' => urlencode(time()),
             'transmissionDateTime' => urlencode(time()),
             'companyCode' => urlencode(1001),
-            'channelID' => urlencode(2),
-            'billKey1' => urlencode(1110091000009),
+            'channelID' => 2,
+            'billKey1' => '123171718104109170211',
             'billKey2' => null,
             'billKey3' => null,
             'reference1' => null,
@@ -65,8 +65,26 @@ else if($method=="payment")
 }
 else if($method=="reverse")
 {
-    $param = array('InquiryRequest'=>array
+    $param = array('ReversalRequest'=>array
     (
+
+        'language' => urlencode('02'),
+        'trxDateTime' => urlencode(time()),
+        'origTrxDateTime' => urlencode(time()),
+        'transmissionDateTime' => urlencode(time()),
+        'origTransmissionDateTime' => urlencode(time()),
+        'companyCode' => urlencode(1001),
+        'channelID' => urlencode(2),
+        'terminalID' => urlencode(2),
+        'billKey1' => urlencode(1110091000009),
+        'billKey2' => null,
+        'billKey3' => null,
+        'paymentAmount' => urlencode(353000),
+        'currency' => urlencode(360),
+        'transactionID' => urlencode(2673099),
+        'reference1' => null,
+        'reference2' => null,
+        'reference3' => null
 
     ));
 }
@@ -92,6 +110,7 @@ if ($err) {
 }
 // Call the SOAP method
 $person = array();
+
 
 
 
