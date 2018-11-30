@@ -11,7 +11,7 @@ function inquiry($array = array())
 
     $va_code_unit = substr($va, 0, 3);
     $va_year = substr($va, 3, 2);
-    $va_nis = substr($va, 5, strlen($va) - 13); // fix 4digit
+    $va_nis = substr($va, 5, 4); // fix 4digit
     $va_month_start = substr(substr($va, -8), 0, 2);
     $va_year_start = substr(substr($va, -6), 0, 2);
     $va_month_end = substr(substr($va, -4), 0, 2);
@@ -20,163 +20,144 @@ function inquiry($array = array())
 
     $tmpstartdate = new DateTime('20' . $va_year_start . '-' . $va_month_start . '-01');
     $tmpenddate = new DateTime('20' . $va_yaer_end . '-' . $va_month_end . '-01');
-    $tmpstartdate2 = new DateTime('20' . $va_year_start . '-' . $va_month_start . '-01');
-    $tmpenddate2 = new DateTime('20' . $va_yaer_end . '-' . $va_month_end . '-01');
+    $intervalDate = $tmpenddate->diff($tmpstartdate);
 
-    $query = "select * from SISWA_SMU  where siswa_nopin= '" . $va_nis . "';";
+
+    $query = "select * from SISWA_SMU  where siswa_nobukti_keuangan= '" . $va_year.$va_nis . "';";
     $siswa = $db->_select($query, array());
     $count_siswa = count($siswa);
-    $nama_siswa = $count_siswa > 0 ? $siswa[0]['siswa_nama_lengkap'] : "";
-
-    //echo "<hr>";
-    $prevmonth = (int)$tmpstartdate->format('m') - 1;
-    //$query = "SELECT * FROM SISWA_UangSekolahDetailSMU where siswa_nopin = '" . $va_nis . "' and siswa_tahun_ajaran='20" . $va_year_start . "'  and siswa_jenis_bayar='" . $prevmonth . "' order by CAST(siswa_jenis_bayar AS UNSIGNED) desc limit 0,1;";
-    $query = "SELECT * FROM SISWA_UangSekolahDetailSMU where siswa_nopin = '" . $va_nis . "' and siswa_tahun_ajaran='20" . $va_year_start . "'  order by CAST(siswa_jenis_bayar AS UNSIGNED) desc limit 0,1;";
-    $invoice = $db->_select($query, array());
-    $totalinvoice = count($invoice);
-
-    //echo "<hr>";
-    $tglterakhirbaray = $invoice[0] ['siswa_tahun_ajaran'] . substr('00' . $invoice[0]['siswa_jenis_bayar'], -2);
-    //echo "<hr>";
+    //echo   $count_siswa;
+    //echo   "<hr>";
+    $siswa_nama = $count_siswa > 0 ? $siswa[0]['siswa_nama_lengkap'] : "";
+    $siswa_nopin = $count_siswa > 0 ? $siswa[0]['siswa_nopin'] : "";
 
 
-    $now = mktime(0, 0, 0, $va_month_start, 1, '20' . $va_year_start);
-
-    $tglmaubayar = date("Ym", strtotime("-1 months", $now));
-
-    $tahunakhirsekolah = $va_year + 1;
-
-
-    $inputtahunakhirbayar = '20' . $va_yaer_end . $va_month_end;
-
-    $tahunakhirbayar = '20' . $tahunakhirsekolah . "06";
+    $query = "select * from TblControlSMU";
+    $schoolname = $db->_select($query, array());
+    $count_school = count($schoolname);
+    //echo   $count_school;
+    //echo   "<hr>";
+    $nama_school = $count_school > 0 ? $schoolname[0]['control_name'] : "";
 
 
-    $array_month = array();
-    $totalbulan = 0;
-    for ($i = -1; $i < 100; $i++) {
 
-        if ($i == -1) {
-            //echo '<br>';
-            //echo $tmpstartdate->format('m');
-            $totalbulan++;
-            array_push($array_month, (int)$tmpstartdate->format('m'));
-        } else {
+    $status_array = array
+    (
+        'isError' => true,
+        'errorCode' => '00',
+        'statusDescription' => 'Sukses'
+    );
 
-            $tmpstartdate->add(new DateInterval("P1M"));
-            $start_month_plus1 = $tmpstartdate->format('m');
-            if ($tmpstartdate <= $tmpenddate) {
-                //echo '<br>';
-                //echo $start_month_plus1;
-                $totalbulan++;
-                array_push($array_month, (int)$start_month_plus1);
-            } else {
-                break;
+
+    $data_tidakditemukan= array
+    (
+        'isError' => true,
+        'errorCode' => '99',
+        'statusDescription' => 'Data Tidak Ditemukan'
+    );
+
+
+    $arraypayment = array();
+    $arrayinfopayment = array();
+    if($count_siswa>0)
+    {
+        $query = "
+        SELECT * FROM SISWA_NewDetailSMU a 
+        where siswa_jenis_bayar not in( SELECT siswa_jenis_bayar FROM SISWA_NewDetailSMU where SUBSTRING(siswa_flag , 1, 1)='y'  and siswa_nopin = a.siswa_nopin)
+        and siswa_nopin='".$siswa_nopin."' 
+        order by CAST(siswa_jenis_bayar AS UNSIGNED) limit 0,1;
+        ";
+        $invoice = $db->_select($query, array());
+        $totalinvoie = count($invoice);
+        //echo   $totalinvoie;
+        //echo   "<hr>";
+
+        $tglterakhirbayar = count($invoice)>0 ? $invoice[0] ['siswa_jenis_bayar'] :"";
+        //echo   "from database :: ".$tglterakhirbayar." = input start :: ".$tmpstartdate->format('Ym').' | input end ::'.$tmpenddate->format('Ym');
+        //echo   "<hr>";
+        
+        $query = "
+        SELECT * FROM SISWA_NewDetailSMU  where SUBSTRING(siswa_flag , 1, 1)='b' and siswa_nopin='".$siswa_nopin."' 
+        order by CAST(siswa_jenis_bayar AS UNSIGNED) desc limit 0,1;
+        ";
+        $datapayment = $db->_select($query, array());
+        $totaldatapayment = count($datapayment);
+        
+        
+        $datatahunbulan = $totaldatapayment>0 ?  $datapayment[0] ['siswa_jenis_bayar'] :"";
+         //echo   "from database akhir bayar :: ".$datatahunbulan." >= " .$tmpenddate->format('Ym');
+        //echo   "<hr>";
+        
+        
+        
+        if($tglterakhirbayar==$tmpstartdate->format('Ym') && $datatahunbulan>=$tmpenddate->format('Ym'))
+        {
+            
+            $query = "SELECT sum(siswa_nominal) as 'totalbayar', siswa_detil_bayar FROM SISWA_NewDetailSMU where SUBSTRING(siswa_flag , 1, 1)='b' and siswa_nopin='".$siswa_nopin."' and CAST(siswa_jenis_bayar AS UNSIGNED) BETWEEN ".$tmpstartdate->format('Ym')." and ".$tmpenddate->format('Ym')." group by siswa_detil_bayar;";
+            $listpayment = $db->_select($query, array());
+            $totalpayment = count($listpayment);
+            //echo   $totalpayment;
+            //echo   "<hr>";
+            if($totalpayment>0)
+            {
+                $no=0;
+                foreach ($listpayment as $key => $value) {
+                    $no++;
+                    $newarray = Array
+                    (
+                        'billCode' => '0' . $no,
+                        'billName' => $value['siswa_detil_bayar'],
+                        'billShortName' => $value['siswa_detil_bayar'],
+                        'billAmount' => (int)$value['totalbayar']
+                    );
+            
+                    array_push($arrayinfopayment, $value['siswa_detil_bayar']);
+            
+                    array_push($arraypayment, $newarray);
+                }
             }
+            else{
+                $status_array =$data_tidakditemukan;
+            }
+
         }
+        else
+        {
+            $status_array =$data_tidakditemukan;
+        }
+        
     }
-    $wherein = "'" . implode("','", $array_month) . "'";
-
-
-    $query = "select * from SISWA_UangSekolahDetilSMU where siswa_nopin='" . $va_nis . "'";
-    $payment = $db->_select($query, array());
-    $no = 0;
-    $penjelasanarray = array();
-    $arraypayemnt = array();
-    foreach ($payment as $key => $value) {
-        $no++;
-        $newarray = Array
-        (
-            'billCode' => '0' . $no,
-            'billName' => $value['siswa_detil_bayar'],
-            'billShortName' => $value['siswa_detil_bayar'],
-            'billAmount' => (int)$value['siswa_nominal'] * $totalbulan
-        );
-
-        //array_push($penjelasanarray, $value['siswa_nama_bayar']);
-
-        array_push($arraypayemnt, $newarray);
+    else
+    {
+        $status_array =$data_tidakditemukan;
     }
 
-    $arraypayemnt2 = $arraypayemnt;
 
 
-    $status_array = array();
-    //echo $tmptglmaubayar = $tglmaubayar;
-    //echo "<br>";
-    //echo $tglterakhirbaray;
-    if ($tahunakhirbayar < $inputtahunakhirbayar) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '991',
-            'statusDescription' => 'tanggal terakhir bayar ' . $tahunakhirbayar
-        );
-        $arraypayemnt2 = array();
-    } else if ($tglmaubayar != $tglterakhirbaray) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '991',
-            'statusDescription' => 'Data Tidak Ditemukan'
-        );
-        $arraypayemnt2 = array();
-    } else if ($tmpstartdate2 > $tmpenddate2) {
+    if ($tmpstartdate > $tmpenddate) {
         $status_array = array
         (
             'isError' => true,
             'errorCode' => '99',
             'statusDescription' => 'Format Bulan Dan Tahun Salah'
         );
-        $arraypayemnt2 = array();
-    } else if ($totalinvoice <= 0) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '99',
-            'statusDescription' => 'Data Tidak Ditemukan'
-        );
-
-    } else {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '00',
-            'statusDescription' => 'Sukses'
-        );
+        $arraypayment = array();
+        $arrayinfopayment = array();
     }
-
-
-    /*
-     * 1. No Bayar
-2. Pembayaran
-3. Nama Siswa
-4. Nama Sekolah
-5. Bulan
-6. Jumlah Bulan
-     * */
-
-
-    $query = "select * from TblControlSMU";
-    $schoolname = $db->_select($query, array());
-    $count_school = count($schoolname);
-    $nama_school = $count_school > 0 ? $schoolname[0]['control_name'] : "";
 
     $arraynew = Array
     (
         'currency' => CURRENCY,
         'billInfo1' => $va,
-        'billInfo2' => "Uang Sekolah",
-        'billInfo3' => $nama_siswa,
+        'billInfo2' => implode(" | ",$arrayinfopayment),
+        'billInfo3' => $siswa_nama,
         'billInfo4' => $nama_school,
-        'billInfo5' => $tmpstartdate2->format('M') . " " . $tmpstartdate2->format('y') . ' SD ' . $tmpenddate2->format('M') . " " . $tmpenddate2->format('y'),
-        'billInfo6' => $totalbulan . ' Bulan',
+        'billInfo5' => $tmpstartdate->format('M y'). ' SD ' . $tmpenddate->format('M y'),
+        'billInfo6' =>  $intervalDate->format('%m')+1 . ' Bulan',
         'billInfo7' => '',
         'billInfo8' => '',
-        'billDetails' => $arraypayemnt2,
-
+        'billDetails' => $arraypayment,
         'status' => $status_array
-
     );
 
 
@@ -186,17 +167,24 @@ function inquiry($array = array())
 
 }
 
-//inquiry(array('billKey1'=>'123171718104110170118'));
+//inquiry(array('billKey1'=>'12317000207171018'));
 //inquiry(array('billKey1'=>'123171718104102180818'));
 //inquiry(array('billKey1' => '123171718104102180718'));
+
+
+
+
 function payment($array = array())
 {
     $db = new database(DB_TYPE, DB_HOST, DB_NAME, DB_PORT, DB_USER, DB_PASS);
+
+    $db_gl = new database(DB_TYPE, DB_HOST, DB_NAME2, DB_PORT, DB_USER2, DB_PASS2);
+
     $va = $array['billKey1'];
 
     $va_code_unit = substr($va, 0, 3);
     $va_year = substr($va, 3, 2);
-    $va_nis = substr($va, 5, strlen($va) - 13);
+    $va_nis = substr($va, 5, 4); // fix 4digit
     $va_month_start = substr(substr($va, -8), 0, 2);
     $va_year_start = substr(substr($va, -6), 0, 2);
     $va_month_end = substr(substr($va, -4), 0, 2);
@@ -205,283 +193,273 @@ function payment($array = array())
 
     $tmpstartdate = new DateTime('20' . $va_year_start . '-' . $va_month_start . '-01');
     $tmpenddate = new DateTime('20' . $va_yaer_end . '-' . $va_month_end . '-01');
-    $tmpstartdate2 = new DateTime('20' . $va_year_start . '-' . $va_month_start . '-01');
-    $tmpenddate2 = new DateTime('20' . $va_yaer_end . '-' . $va_month_end . '-01');
+    
 
-    $query = "select * from SISWA_SMU  where siswa_nopin= '" . $va_nis . "';";
+    $intervalDate = $tmpenddate->diff($tmpstartdate);
+
+
+    $query = "select * from SISWA_SMU  where siswa_nobukti_keuangan= '" . $va_year.$va_nis . "';";
     $siswa = $db->_select($query, array());
     $count_siswa = count($siswa);
-    $nama_siswa = $count_siswa > 0 ? $siswa[0]['siswa_nama_lengkap'] : "";
-
-    $prevmonth = (int)$tmpstartdate->format('m') - 1;
-    $query = "SELECT * FROM SISWA_UangSekolahDetailSMU where siswa_nopin = '" . $va_nis . "' and siswa_tahun_ajaran='20" . $va_year_start . "'   order by CAST(siswa_jenis_bayar AS UNSIGNED) desc limit 0,1;";
-    $invoice = $db->_select($query, array());
-    $totalinvoice = count($invoice);
+    //echo   $count_siswa;
+    //echo   "<hr>";
+    $siswa_nama = $count_siswa > 0 ? $siswa[0]['siswa_nama_lengkap'] : "";
+    $siswa_nopin = $count_siswa > 0 ? $siswa[0]['siswa_nopin'] : "";
 
 
-    $tglterakhirbaray = $invoice[0] ['siswa_tahun_ajaran'] . substr('00' . $invoice[0]['siswa_jenis_bayar'], -2);
-    //echo "<hr>";
+    $query = "select * from TblControlSMU";
+    $schoolname = $db->_select($query, array());
+    $count_school = count($schoolname);
+    //echo   $count_school;
+    //echo   "<hr>";
+    $nama_school = $count_school > 0 ? $schoolname[0]['control_name'] : "";
 
 
-    $now = mktime(0, 0, 0, $va_month_start, 1, '20' . $va_year_start);
 
-    $tglmaubayar = date("Ym", strtotime("-1 months", $now));
-
-    $tahunakhirsekolah = $va_year + 1;
-
-
-    $inputtahunakhirbayar = '20' . $va_yaer_end . $va_month_end;
-
-    $tahunakhirbayar = '20' . $tahunakhirsekolah . "06";
+    $status_array = array
+    (
+        'isError' => true,
+        'errorCode' => '00',
+        'statusDescription' => 'Sukses'
+    );
 
 
-    $array_month = array();
-    $totalbulan = 0;
-    for ($i = -1; $i < 100; $i++) {
-
-        if ($i == -1) {
-            //echo '<br>';
-            //echo $tmpstartdate->format('m');
-            $totalbulan++;
-            array_push($array_month, (int)$tmpstartdate->format('m'));
-        } else {
-
-            $tmpstartdate->add(new DateInterval("P1M"));
-            $start_month_plus1 = $tmpstartdate->format('m');
-            if ($tmpstartdate <= $tmpenddate) {
-                //echo '<br>';
-                //echo $start_month_plus1;
-                $totalbulan++;
-                array_push($array_month, (int)$start_month_plus1);
-            } else {
-                break;
-            }
-        }
-    }
-    $wherein = "'" . implode("','", $array_month) . "'";
+    $data_tidakditemukan= array
+    (
+        'isError' => true,
+        'errorCode' => '99',
+        'statusDescription' => 'Data Tidak Ditemukan'
+    );
 
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    $checkpayment = 1;
-    foreach ($array_month as $k) {
-        $query = "select * from SISWA_UangSekolahDetailSMU where siswa_tahun_ajaran='20" . $va_year_start . "' and siswa_jenis_bayar='" . $k . "' and siswa_nopin ='" . $va_nis . "'";
+    $arraypayment = array();
+    $arrayinfopayment = array();
+    if($count_siswa>0)
+    {
+        
+      $query = "
+        SELECT * FROM SISWA_NewDetailSMU a 
+        where siswa_jenis_bayar not in( SELECT siswa_jenis_bayar FROM SISWA_NewDetailSMU where SUBSTRING(siswa_flag , 1, 1)='y'  and siswa_nopin = a.siswa_nopin)
+        and siswa_nopin='".$siswa_nopin."' 
+        order by CAST(siswa_jenis_bayar AS UNSIGNED) limit 0,1;
+        ";
         $invoice = $db->_select($query, array());
-        $totalinvoice2 = count($invoice);
+        $totalinvoie = count($invoice);
+        //echo   $totalinvoie;
+        //echo   "<hr>";
 
-        if ($totalinvoice2 > 0) {
-            $checkpayment = 0;
-            break;
-        }
+        $tglterakhirbayar = count($invoice)>0 ? $invoice[0] ['siswa_jenis_bayar'] :"";
+        //echo   "from database :: ".$tglterakhirbayar." = input start :: ".$tmpstartdate->format('Ym').' | input end ::'.$tmpenddate->format('Ym');
+        //echo   "<hr>";
+        
+               $query = "
+        SELECT * FROM SISWA_NewDetailSMU  where SUBSTRING(siswa_flag , 1, 1)='b' and siswa_nopin='".$siswa_nopin."' 
+        order by CAST(siswa_jenis_bayar AS UNSIGNED) desc limit 0,1;
+        ";
+        $datapayment = $db->_select($query, array());
+        $totaldatapayment = count($datapayment);
+        
+        
+        $datatahunbulan = $totaldatapayment>0 ?  $datapayment[0] ['siswa_jenis_bayar'] :"";
+         //echo   "from database akhir bayar :: ".$datatahunbulan." >= " .$tmpenddate->format('Ym');
+        //echo   "<hr>";
+        
+        
+        
+        if($tglterakhirbayar==$tmpstartdate->format('Ym') && $datatahunbulan>=$tmpenddate->format('Ym'))
+        
+        {
+            $query = "SELECT sum(siswa_nominal) as 'totalbayar', siswa_detil_bayar FROM SISWA_NewDetailSMU where SUBSTRING(siswa_flag , 1, 1)='b' and siswa_nopin='".$siswa_nopin."' and CAST(siswa_jenis_bayar AS UNSIGNED) BETWEEN ".$tmpstartdate->format('Ym')." and ".$tmpenddate->format('Ym')." group by siswa_detil_bayar;";
+            $listpayment = $db->_select($query, array());
+            $totalpayment = count($listpayment);
+            //echo   $totalpayment;
+            //echo   "<hr>";
+            if($totalpayment>0)
+            {
+                $no=0;
 
-    }
-
-
-    $kodetime = time();
-
-    $noo = 0;
-    if ($checkpayment > 0 && $tahunakhirbayar >= $inputtahunakhirbayar && $tglmaubayar == $tglterakhirbaray) {
-
-
-        $insert_table = 'SISWA_NewPayemntSmu';
-        $insert_data = array(
-            'siswa_nopin' => $va_nis,
-            'siswa_tahun_ajaran' => '20' . $va_year,
-            'siswa_va' => $va,
-            'siswa_tangal_bayar' => date('Y-m-d H:i:s')
-        );
-        $db->_insert($insert_table, $insert_data);
-
-
-        $query = "select * from SISWA_UangSekolahDetilSMU where siswa_nopin='" . $va_nis . "'";
-        $bill = $db->_select($query, array());
-
-        $countbill = count($bill);
-        $siswa_detil_bayar = $countbill > 0 ? $bill[0]['siswa_detil_bayar'] : '';
-        $siswa_nominal = $countbill > 0 ? $bill[0]['siswa_nominal'] : '';
-
-        $checkmonth = 0;
-        $yearinsert = $va_year_start;
-        foreach ($array_month as $k) {
-
-            if ($checkmonth == 0) {
-                $checkmonth = $k;
-            } else {
-                if ($checkmonth > $k) {
-                    $yearinsert = $va_year_start + 1;
+                $grandtotal = 0;
+                foreach ($listpayment as $key => $value) {
+                    $no++;
+                    $grandtotal+=(int)$value['totalbayar'];
+                    $newarray = Array
+                    (
+                        'billCode' => '0' . $no,
+                        'billName' => $value['siswa_detil_bayar'],
+                        'billShortName' => $value['siswa_detil_bayar'],
+                        'billAmount' => (int)$value['totalbayar']
+                    );
+                    array_push($arrayinfopayment, $value['siswa_detil_bayar']);
+                    array_push($arraypayment, $newarray);
                 }
+
+                $totalbulan = $intervalDate->format('%m') ;
+                $updatedate = $tmpstartdate;
+                for($i=0;$i<=$totalbulan;$i++)
+                {
+                    
+                    //echo  $i;
+                    //echo  "<hr>";
+                    $newdate = $i==0 ? $updatedate : $updatedate->add(new DateInterval("P1M"));
+                    $new_siswa_tahunbulanbayar  =   $newdate->format('Ym');
+                    $update_table = 'SISWA_NewDetailSMU';
+                    $update_data = array(
+                        'siswa_flag' => 'ybbbb'
+                    );
+                    $update_cond = array(
+                        'siswa_jenis_bayar'=>$new_siswa_tahunbulanbayar,
+                        'siswa_nopin' => $siswa_nopin,
+                    );
+                    $db->_update($update_table, $update_data, $update_cond);
+                }
+                $kodetime=time();
+                $insert_table = 'SISWA_PayInvoiceSMU';
+                $insert_data = array(
+                    'pay_invoice_id' => 'SMA-' . $va_year.$va_nis,
+                    'pay_siswa_nobukti' => $siswa_nopin,
+                    'pay_tahun_ajaran' => $va_year,
+                    'pay_jenis' => implode(",",$arrayinfopayment),
+                    'pay_nominal' => $grandtotal,
+                    'pay_mu_id' => 'IDR',
+                    'pay_tanggal_bayar' => date("Y-m-d H:i:s"),
+                    'pay_timestamp' => date("Y-m-d H:i:s"),
+                    'pay_nobukti' => $kodetime ,
+                    'pay_kuitansi_id' => $va,
+                    'pay_jenis_kuitansi' => 'T',
+                    'pay_method_id' => 'A',
+                    'pay_desc' => 'I',
+                    'pay_bayar_via' => 'I',
+                    'pay_cetak' => '0',
+                    'pay_kuitansi_sementara' => 'I',
+                    'pay_not_active' => 'I',
+                    'pay_not_active_desc' => 'I',
+                    'pay_flag' => 'I'
+                );
+                $db->_insert($insert_table, $insert_data);
+
+
+                $insert_table = 'SISWA_NewPaymentSMU';
+                $insert_data = array(
+                    'siswa_nopin' => $siswa_nopin,
+                    'siswa_tahun_ajaran' => '20' . $va_year,
+                    'siswa_va' => $va,
+                    'siswa_tangal_bayar' => date('Y-m-d H:i:s')
+                );
+                $db->_insert($insert_table, $insert_data);
+
+
+
+                /**
+                 * 
+                 txn_code : PAYH2H~17~POKOK~SMU~12317000107170917
+txn_cabang_code : 123
+txn_id : 17181041:abel Glori
+txn_currency_code :IDR
+txn_currency_rate : 0
+txn_date : now()
+txn_input : now()
+txn_desc : Jurnal H2H~12317000107170917 17181041
+txn_flag : bbbbbbbbbb
+
+                 * 
+                 */
+                $insert_table = 'GL_TxnHead';
+                $insert_data = array(
+                    'txn_code'=>"PAYH2H~".$va_year."~POKOK~SMU~".$va,
+                    'txn_cabang_code'=>$va_code_unit,
+                    'txn_id'=>$siswa_nopin.':'.$siswa_nama,
+                    'txn_currency_code'=>'IDR',
+                    'txn_currency_rate'=>0,
+                    'txn_date'=>date('Y-m-d'),
+                    'txn_input'=>date('Y-m-d H:i:s'),
+                    'txn_desc'=>'Jurnal H2H~'.$va.' '.$siswa_nopin,
+                    'txn_flag'=>'bbbbbbbbbb'
+                );
+                $db_gl->_insert($insert_table, $insert_data);
+
+
+                $insert_table = 'GL_TxnDetail';
+                $insert_data = array(
+                    'txn_code'=>"PAYH2H~".$va_year."~POKOK~SMU~".$va,
+                    'txn_gl_code'=>"11310",
+                    'txn_seksi_code'=>"YPL",
+                    'txn_amount_db'=>$grandtotal,
+                    'txn_amount_cr'=>0,
+                    'txn_desc'=>$siswa_nopin,
+                    'txn_flag'=>'bbbbbbbbbb'
+                );
+                $db_gl->_insert($insert_table, $insert_data);
+
+
+
+                $insert_table = 'GL_TxnDetail';
+                $insert_data = array(
+                    'txn_code'=>"PAYH2H~".$va_year."~POKOK~SMU~".$va,
+                    'txn_gl_code'=>"12203",
+                    'txn_seksi_code'=>"YPL",
+                    'txn_amount_cr'=>$grandtotal,
+                    'txn_amount_db'=>0,
+                    'txn_desc'=>$siswa_nopin,
+                    'txn_flag'=>'bbbbbbbbbb'
+                );
+                $db_gl->_insert($insert_table, $insert_data);
+
+
+
+
+
+
+            }
+            else{
+                $status_array =$data_tidakditemukan;
             }
 
-            $noo++;
-            $insert_table = 'SISWA_PayInvoiceSMU';
-            $insert_data = array(
-                'pay_invoice_id' => 'SMA-' . $kodetime . '0' . $noo,
-                'pay_siswa_nobukti' => $va_nis,
-                'pay_tahun_ajaran' => $yearinsert,
-                'pay_jenis' => $siswa_detil_bayar,
-                'pay_nominal' => $siswa_nominal,
-                'pay_mu_id' => 'IDR',
-                'pay_tanggal_bayar' => date("Y-m-d H:i:s"),
-                'pay_timestamp' => date("Y-m-d H:i:s"),
-                'pay_nobukti' => $kodetime . '0' . $noo,
-                'pay_kuitansi_id' => $kodetime . '0' . $noo,
-                'pay_jenis_kuitansi' => 'T',
-                'pay_method_id' => 'A',
-                'pay_desc' => 'I',
-                'pay_bayar_via' => 'I',
-                'pay_cetak' => '0',
-                'pay_kuitansi_sementara' => 'I',
-                'pay_not_active' => 'I',
-                'pay_not_active_desc' => 'I',
-                'pay_flag' => 'I'
-            );
-            $db->_insert($insert_table, $insert_data);
-
-
-            $insert_table = 'SISWA_UangSekolahDetailSMU';
-            $insert_data = array(
-                'siswa_nopin' => $va_nis,
-                'siswa_tahun_ajaran' => '20' . $yearinsert,
-                'siswa_invoice_id' => $kodetime . '0' . $noo,
-                'siswa_jenis_bayar' => $k,
-                'siswa_detil_bayar' => $siswa_detil_bayar,
-                'siswa_nominal' => $siswa_nominal,
-                'siswa_mu_id' => 'IDR',
-                'siswa_timestamp' => date('Y-m-d H:i:s'),
-                'siswa_detil_urut' => '0',
-                'siswa_flag' => 'bbbbb',
-                'siswa_keterangan_lain' => ''
-            );
-            $db->_insert($insert_table, $insert_data);
         }
+        else
+        {
+            $status_array =$data_tidakditemukan;
+        }
+        
+    }
+    else
+    {
+        $status_array =$data_tidakditemukan;
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///
-
-    $query = "select * from SISWA_UangSekolahDetilSMU where siswa_nopin='" . $va_nis . "'";
-
-    $payment = $db->_select($query, array());
-    $no = 0;
-    $penjelasanarray = array();
-    $arraypayemnt = array();
-    foreach ($payment as $key => $value) {
-        $no++;
-        $newarray = Array
-        (
-            'billCode' => '0' . $no,
-            'billName' => $value['siswa_detil_bayar'],
-            'billShortName' => $value['siswa_detil_bayar'],
-            'billAmount' => (int)$value['siswa_nominal'] * $noo
-        );
-
-        //array_push($penjelasanarray, $value['siswa_nama_bayar']);
-
-        array_push($arraypayemnt, $newarray);
-    }
-
-    $arraypayemnt2 = $arraypayemnt;
 
 
-    $status_array = array();
-
-    //echo $tmptglmaubayar = $tglmaubayar;
-    //echo "<br>";
-    //echo $tglterakhirbaray;
-    if ($tahunakhirbayar < $inputtahunakhirbayar) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '991',
-            'statusDescription' => 'tanggal terakhir bayar ' . $tahunakhirbayar
-        );
-        $arraypayemnt2 = array();
-    } else if ($tglmaubayar != $tglterakhirbaray) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '991',
-            'statusDescription' => 'Data Tidak Ditemukan'
-        );
-        $arraypayemnt2 = array();
-    } else if ($checkpayment === 0) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '99',
-            'statusDescription' => 'Ada data telah di input'
-        );
-    } else if ($tmpstartdate2 > $tmpenddate2) {
+    if ($tmpstartdate > $tmpenddate) {
         $status_array = array
         (
             'isError' => true,
             'errorCode' => '99',
             'statusDescription' => 'Format Bulan Dan Tahun Salah'
         );
-    } else if ($totalinvoice <= 0) {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '99',
-            'statusDescription' => 'Data Tidak Ditemukan'
-        );
-    } else {
-        $status_array = array
-        (
-            'isError' => true,
-            'errorCode' => '00',
-            'statusDescription' => 'Sukses'
-        );
+        $arraypayment = array();
+        $arrayinfopayment = array();
     }
-
-
-    /*
-     * 1. No Bayar
-2. Pembayaran
-3. Nama Siswa
-4. Nama Sekolah
-5. Bulan
-6. Jumlah Bulan
-     * */
-
-
-    $query = "select * from TblControlSMU";
-    $schoolname = $db->_select($query, array());
-    $count_school = count($schoolname);
-    $nama_school = $count_school > 0 ? $schoolname[0]['control_name'] : "";
 
     $arraynew = Array
     (
-
+        'currency' => CURRENCY,
         'billInfo1' => $va,
-        'billInfo2' => "Uang Sekolah",
-        'billInfo3' => $nama_siswa,
+        'billInfo2' => implode(" | ",$arrayinfopayment),
+        'billInfo3' => $siswa_nama,
         'billInfo4' => $nama_school,
-        'billInfo5' => $tmpenddate2->format('M') . " " . $tmpenddate2->format('y'),
-        'billInfo6' => $totalbulan . ' Bulan',
+        'billInfo5' => $tmpstartdate->format('M y'). ' SD ' . $tmpenddate->format('M y'),
+        'billInfo6' =>  $intervalDate->format('%m')+1 . ' Bulan',
         'billInfo7' => '',
         'billInfo8' => '',
-
-
         'status' => $status_array
-
     );
 
+
     //_pre($arraynew);
+
     return $arraynew;
 
 }
-
-
-//payment(array('billKey1' => '123171718104110170118'));
+//payment(array('billKey1' => '12317000108170118'));
 
 
 function reverse($array = array())

@@ -1,5 +1,5 @@
 <?php
-define('LINK_WSDL','http://localhost/h2hns/server.php?wsdl');
+define('LINK_WSDL','http://localhost/h2h/server.php?wsdl');
 
 
 define('CURRENCY', '360');
@@ -12,6 +12,14 @@ define('DB_PORT', '3306');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_DEBUG', TRUE);
+
+
+
+
+define('DB_NAME2', 'klikseko_GLDEMO');
+define('DB_USER2', 'root');
+define('DB_PASS2', '');
+
 
 
 
