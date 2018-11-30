@@ -1,4 +1,6 @@
 <?php
+
+require_once('./var.php');
 // Pull in the NuSOAP code
 require_once('./nusoap/lib/nusoap.php');
 // Create the client instance
@@ -29,7 +31,7 @@ if($method=="inquiry")
             'transmissionDateTime' => urlencode(time()),
             'companyCode' => urlencode(1001),
             'channelID' => 2,
-            'billKey1' => '123171718104109170211',
+            'billKey1' => '123171718104110170118',
             'billKey2' => null,
             'billKey3' => null,
             'reference1' => null,
@@ -50,7 +52,7 @@ else if($method=="payment")
             'transmissionDateTime' => urlencode(time()),
             'companyCode' => urlencode(1001),
             'channelID' => urlencode(2),
-            'billKey1' => urlencode(1110091000009),
+            'billKey1' => '123171718104110170118',
             'billKey2' => null,
             'billKey3' => null,
             'paidBills' => array ('string'=>'01'),
@@ -100,7 +102,7 @@ else if($method=="test")
 
 
 
-$client = new nusoap_client('http://localhost/h2hns/server.php?wsdl', true);
+$client = new nusoap_client(LINK_WSDL, true);
 // Check for an error
 $err = $client->getError();
 if ($err) {

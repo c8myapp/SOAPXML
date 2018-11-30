@@ -1,7 +1,7 @@
 <?php
 // Pull in the NuSOAP code
 require_once('./nusoap/lib/nusoap.php');
-require_once('fn.php');
+require_once('method_xml.php');
 // Create the server instance
 $server = new soap_server();
 // Initialize WSDL support
@@ -289,7 +289,7 @@ $server->wsdl->addComplexType(
     '',
 
     array(
-        'currency' => array('name' => 'currency', 'type' => 'tns:Status')
+        'status' => array('name' => 'status', 'type' => 'tns:status')
     )
 );
 
